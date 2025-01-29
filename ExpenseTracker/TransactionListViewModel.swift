@@ -7,8 +7,10 @@
 
 import Foundation
 import Combine
+import Collections
 
-typealias TransactionGroup = [String: [Transaction]]
+typealias TransactionGroup = OrderedDictionary<String, [Transaction]>
+typealias TransactionPrefixSum = [(String, Double)]
 final class TransactionListViewModel: ObservableObject{
     // This allows a publisher that gives every user that uses this state, an update viewpoint of the data
     
@@ -60,6 +62,34 @@ final class TransactionListViewModel: ObservableObject{
     
     private func handleRecievedData(_ transactions: [Transaction]) {
         self.transactions = transactions
+    }
+    
+    func accumulateTransactions() -> TransactionPrefixSum {
+    
+        guard !transactions.isEmpty else {
+            return []
+        }
+        
+        let today = "02/17/2022".dateParse()
+        let dateInterval = Calendar.current.dateInterval(of: .month, for: today)!
+
+        
+        var sum: Double = .zero
+        var cumSum = TransactionPrefixSum()
+        for date in stride(from: dateInterval.start, to: today, by: 60 * 60 * 24){
+           
+            let dailyExpenses = self.transactions.filter({ $0.isExpense })
+                .filter({ $0.date.dateParse() == date })
+
+            let dailyTotal = dailyExpenses.reduce(0) { $0 - $1.signedAmount}
+            sum += dailyTotal
+            sum = sum.roundedToTwoDecimals()
+ 
+            cumSum.append((date.formatted(), sum))
+
+        }
+        
+        return cumSum
     }
     
     func groupTranasactionsByMonth() -> TransactionGroup {

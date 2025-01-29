@@ -35,3 +35,11 @@ extension String{
         return parseDate
     }
 }
+
+extension Double {
+    
+    func roundedToTwoDecimals() -> Double {
+        return (self * 100.0).rounded() / 100.0
+    }
+}
+

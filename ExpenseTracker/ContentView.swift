@@ -1,19 +1,14 @@
-//
-//  ContentView.swift
-//  ExpenseTracker
-//
-//  Created by Abraham Belayneh on 1/25/25.
-//
-
 import SwiftUI
+import SwiftUICharts
 
 struct ContentView: View {
     @State private var scrollOffset: CGFloat = 0
+    @EnvironmentObject var transactionListVM: TransactionListViewModel
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(spacing: 24) { // No `.leading` alignment to keep content centered
                     
                     // MARK: Track Scroll Offset
                     GeometryReader { geometry in
@@ -21,18 +16,36 @@ struct ContentView: View {
                             .preference(key: ScrollOffsetKey.self, value: geometry.frame(in: .global).minY)
                     }
                     .frame(height: 0) // Invisible but tracks scrolling
+
+                    // MARK: Transactions Chart with Timeline
+                    let data = transactionListVM.accumulateTransactions()
+                    if !data.isEmpty{
+                        let totalExpenses = data.last?.1 ?? 0
+                        CardView {
+                            VStack(alignment: .leading){
+                                ChartLabel(totalExpenses.formatted(.currency(code: "USD")), type: .title, format:"$%0.2f")
+                                LineChart()
+                                
+                            }
+                            .background(Color.systemBackground)
+                            
+                        }
+                        .data(data)
+                        .chartStyle(ChartStyle(backgroundColor: Color.systemBackground, foregroundColor: ColorGradient(Color.icon.opacity(0.4), Color.icon)))
+                        .frame(height:300)
+                    }
                     
-                   
                     
+
                     // MARK: Recent Transactions List
                     RecentTransactionsList()
                 }
-                .padding()
+                .padding(.horizontal, 16) // Ensure consistent padding
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(Color.background)
-            .navigationTitle("Overview") // Fixed inline title
-            .navigationBarTitleDisplayMode(scrollOffset > -10 ? .large : .inline) // Dynamic switch
+            .navigationTitle("Overview")
+            .navigationBarTitleDisplayMode(scrollOffset > -10 ? .large : .inline)
             .toolbar {
                 // MARK: Notification Icon
                 ToolbarItem(placement: .topBarTrailing) {
@@ -45,6 +58,7 @@ struct ContentView: View {
                 scrollOffset = value
             }
         }
+        .accentColor(.primary)
     }
 }
 
@@ -55,6 +69,8 @@ struct ScrollOffsetKey: PreferenceKey {
         value = nextValue()
     }
 }
+
+
 
 
 #Preview {
